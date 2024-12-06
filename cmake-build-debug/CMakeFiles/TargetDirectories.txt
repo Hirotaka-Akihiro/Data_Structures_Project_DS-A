@@ -1,0 +1,3 @@
+C:/Users/pc/Downloads/Data_Structures_Project_DS-A/cmake-build-debug/CMakeFiles/Data_Structures_Project_DS_A.dir
+C:/Users/pc/Downloads/Data_Structures_Project_DS-A/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/pc/Downloads/Data_Structures_Project_DS-A/cmake-build-debug/CMakeFiles/rebuild_cache.dir
