@@ -20,7 +20,6 @@ public:
     int size;
 
     LinkedList() : head(nullptr), tail(nullptr), size(0) {}
-
     void enqueue(T value) {
         Node<T>* NN = new Node<T>(value);
         if (!tail) {
@@ -31,7 +30,6 @@ public:
         }
         size++;
     }
-
     void printList() const {
         Node<T>* current = head;
         while (current) {
@@ -63,7 +61,6 @@ public:
         }
         return false;
     }
-
     ~LinkedList() {
         while (head) {
             Node<T>* temp = head;
@@ -91,7 +88,6 @@ public:
     LinkedList<Edge> neighbors;
 
     GraphNode(const string& id) : id(id) {}
-
     void addNeighbor(const string& neighborId, int weight, int vehicles = 0) {
         Edge edge(neighborId, weight, vehicles);
         neighbors.enqueue(edge);
@@ -169,8 +165,8 @@ public:
             Node<Edge>* edgeNode = node->neighbors.head;
             while (edgeNode) {
                 if (edgeNode->data.blocked) {
-                    cout << "Blocked road from " << node->id << " to "
-                         << edgeNode->data.destination << endl;
+                    cout << node->id << " to "
+                         << edgeNode->data.destination << " is blocked.\n";
                 }
                 edgeNode = edgeNode->next;
             }
@@ -180,12 +176,13 @@ public:
     void loadBlocked(const string& filename) {
         ifstream file(filename);
         if (!file.is_open()) {
-            cout << "Error: Unable to open file " << filename << endl;
+            cout << "File doesn't exist.\n";
             return;
         }
 
         string line;
         getline(file, line);
+
         while (getline(file, line)) {
             stringstream ss(line);
             string from, to, status;
@@ -196,8 +193,10 @@ public:
                         edge->block();
                         cout << "Road blocked from " << from << " to " << to << endl;
                     }
-                    else
+                    else {
                         cout << "Road doesn't exist.\n";
+                    }
+
                 }
             }
         }
@@ -207,12 +206,13 @@ public:
     void loadNetwork(const string& filename) {
         ifstream file(filename);
         if (!file.is_open()) {
-            cout << "Error: Unable to open file " << filename << endl;
+            cout << "File doesn't exist.\n";
             return;
         }
 
         string line;
         getline(file, line);
+
         while (getline(file, line)) {
             stringstream ss(line);
             string from, to, weightStr;
@@ -224,7 +224,6 @@ public:
                 addEdge(from, to, weight);
             }
         }
-
         file.close();
     }
 };
@@ -234,9 +233,9 @@ int main() {
 
     graph.loadNetwork("road_network.csv");
     graph.loadBlocked("road_closures.csv");
+
     cout << "Graph Adjacency List:" << endl;
     graph.printGraph();
     graph.showBlocked();
-
     return 0;
 }
