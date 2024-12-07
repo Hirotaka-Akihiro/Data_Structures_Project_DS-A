@@ -1,14 +1,17 @@
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
 using namespace std;
 
 template <typename T>
 class Node {
 public:
     T data;
-    int weight; // Weight associated with the node
+    int weight;
+    int vehicles;
     Node* next;
-
-    Node(T value, int weight = 0) : data(value), weight(weight), next(nullptr) {}
+    Node(T value, int weight = 0, int vehicles = 0) : data(value), weight(weight), vehicles(vehicles), next(nullptr) {}
 };
 
 template <typename T>
@@ -31,24 +34,6 @@ public:
         size++;
     }
 
-    T pop() {
-        if (!head) {
-            return T();
-        }
-
-        Node<T>* temp = head;
-        T value = temp->data;
-        head = head->next;
-
-        if (!head) {
-            tail = nullptr;
-        }
-
-        delete temp;
-        size--;
-        return value;
-    }
-
     void enqueue(T value, int weight = 0) {
         Node<T>* NN = new Node<T>(value, weight);
         if (!tail) {
@@ -60,38 +45,19 @@ public:
         size++;
     }
 
-    T dequeue() {
-        if (!head) {
-            return T();
-        }
-
-        Node<T>* temp = head;
-        T value = temp->data;
-        head = head->next;
-
-        if (!head) {
-            tail = nullptr;
-        }
-
-        delete temp;
-        size--;
-        return value;
-    }
-
-    bool isEmpty() const {
-        return head == nullptr;
-    }
-
     void printList() const {
         Node<T>* current = head;
         while (current) {
-            cout << "(" << current->data << ", " << current->weight << ") ";
+            if (current->next != nullptr)
+                cout << "(" << current->data  << ", "<< current->weight << "), ";
+            else
+                cout << "(" << current->data << ", "<< current->weight << ")";
             current = current->next;
         }
         cout << endl;
     }
 
-    bool contains(T value) const {
+    bool contains(const T& value) const {
         Node<T>* current = head;
         while (current) {
             if (current->data == value) {
@@ -113,21 +79,21 @@ public:
 
 class GraphNode {
 public:
-    int id;
-    LinkedList<int> neighbors;
+    string id;
 
-    GraphNode(int id = 0) : id(id) {}
+    LinkedList<string> neighbors;
 
-    void addNeighbor(int neighborId, int weight) {
+    GraphNode(const string& id) : id(id) {}
+
+    void addNeighbor(const string& neighborId, int weight) {
         neighbors.enqueue(neighborId, weight);
     }
 };
 
 class Graph {
-private:
+public:
     LinkedList<GraphNode*> vertices;
-
-    GraphNode* findNode(int id) {
+    GraphNode* findNode(const string& id) {
         Node<GraphNode*>* current = vertices.head;
         while (current) {
             if (current->data->id == id) {
@@ -137,10 +103,6 @@ private:
         }
         return nullptr;
     }
-
-public:
-    Graph() : vertices() {}
-
     ~Graph() {
         Node<GraphNode*>* current = vertices.head;
         while (current) {
@@ -149,7 +111,7 @@ public:
         }
     }
 
-    void addNode(int id) {
+    void addNode(const string& id) {
         if (findNode(id)) {
             return;
         }
@@ -157,112 +119,61 @@ public:
         vertices.enqueue(newNode);
     }
 
-    void addEdge(int from, int to, int weight) {
+    void addEdge(const string& from, const string& to, int weight) {
         GraphNode* fromNode = findNode(from);
         GraphNode* toNode = findNode(to);
+
         if (!fromNode || !toNode) {
-            cout << "One or both nodes not found. Cannot add edge." << endl;
+            cout << "Error! Either of the nodes is missing.\n";
             return;
         }
-        if (fromNode && toNode) {
+
+        if (!fromNode->neighbors.contains(to)) {
             fromNode->addNeighbor(to, weight);
         }
     }
 
-    void printGraph() {
+    void printGraph() const {
         Node<GraphNode*>* current = vertices.head;
         while (current) {
-            cout << "Node " << current->data->id << ": ";
+            cout << current->data->id << " -> ";
             current->data->neighbors.printList();
             current = current->next;
         }
     }
 
-    void bfs(int startId) {
-        GraphNode* start = findNode(startId);
-        if (!start) {
-            cout << "Start node not found!" << endl;
+    void load(const string& filename) {
+        ifstream file(filename);
+        if (!file.is_open()) {
+            cout << "File doesn't exist.\n ";
             return;
         }
-
-        LinkedList<int> queue;
-        LinkedList<int> visited;
-        queue.enqueue(startId);
-
-        while (!queue.isEmpty()) {
-            int currentId = queue.dequeue();
-            if (!visited.contains(currentId)) {
-                cout << currentId << " ";
-                visited.enqueue(currentId);
-
-                GraphNode* currentNode = findNode(currentId);
-                if (currentNode) {
-                    Node<int>* neighbor = currentNode->neighbors.head;
-                    while (neighbor) {
-                        if (!visited.contains(neighbor->data)) {
-                            queue.enqueue(neighbor->data);
-                        }
-                        neighbor = neighbor->next;
-                    }
-                }
+        string line;
+        getline(file, line);
+        while (getline(file, line)) {
+            stringstream ss(line);
+            string from, to, weightStr;
+            int weight;
+            if (getline(ss, from, ',') && getline(ss, to, ',') && getline(ss, weightStr, ',')) {
+                weight = stoi(weightStr);
+                addNode(from);
+                addNode(to);
+                addEdge(from, to, weight);
             }
         }
-        cout << endl;
+
+        file.close();
     }
 
-    void dfsHelper(int nodeId, LinkedList<int>& visited) {
-        if (visited.contains(nodeId)) {
-            return;
-        }
-
-        cout << nodeId << " ";
-        visited.enqueue(nodeId);
-
-        GraphNode* node = findNode(nodeId);
-        if (node) {
-            Node<int>* neighbor = node->neighbors.head;
-            while (neighbor) {
-                if (!visited.contains(neighbor->data)) {
-                    dfsHelper(neighbor->data, visited);
-                }
-                neighbor = neighbor->next;
-            }
-        }
-    }
-
-    void dfs(int startId) {
-        LinkedList<int> visited;
-        dfsHelper(startId, visited);
-        cout << endl;
-    }
 };
 
 int main() {
     Graph graph;
-    graph.addNode(1);
-    graph.addNode(2);
-    graph.addNode(3);
-    graph.addNode(4);
-    graph.addNode(5);
 
-    graph.addEdge(1, 2, 4);
-    graph.addEdge(4, 3, 3);
-    graph.addEdge(2, 5, 2);
-    graph.addEdge(1, 3, 1);
-    graph.addEdge(3, 4, 5);
-    graph.addEdge(3, 2, 6);
-    graph.addEdge(4, 1, 7);
-    graph.addEdge(4, 5, 8);
-    graph.addEdge(5, 2, 9);
+    graph.load("road_network.csv");
 
     cout << "Graph Adjacency List:" << endl;
     graph.printGraph();
-
-    cout << "\nBFS Traversal:" << endl;
-    graph.bfs(1);
-
-    cout << "\nDFS Traversal:" << endl;
-    graph.dfs(1);
 
     return 0;
 }

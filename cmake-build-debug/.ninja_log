@@ -1,3 +1,20 @@
 # ninja log v6
-14	455	7551885217741036	CMakeFiles/Data_Structures_Project_DS_A.dir/Lab12_q2.cpp.obj	2175fd4fb472c26c
-457	646	7551885222170219	Data_Structures_Project_DS_A.exe	fc5d035a7c13192b
+33	602	7552637046953960	CMakeFiles/Data_Structures_Project_DS_A.dir/Lab12_q2.cpp.obj	2175fd4fb472c26c
+603	769	7552637052651704	Data_Structures_Project_DS_A.exe	fc5d035a7c13192b
+41	661	7552676032054696	build.ninja	2999d042f7f94faf
+20	1462	7552676033092232	CMakeFiles/Data_Structures_Project_DS_A.dir/main.cpp.obj	d06cfb0aca7b2c6b
+1463	1751	7552676047521932	Data_Structures_Project_DS_A.exe	c2d03beabab0bf54
+19	517	7552676693934758	CMakeFiles/Data_Structures_Project_DS_A.dir/main.cpp.obj	d06cfb0aca7b2c6b
+518	673	7552676698931044	Data_Structures_Project_DS_A.exe	c2d03beabab0bf54
+10	530	7552684080439855	CMakeFiles/Data_Structures_Project_DS_A.dir/main.cpp.obj	d06cfb0aca7b2c6b
+531	694	7552684085654561	Data_Structures_Project_DS_A.exe	c2d03beabab0bf54
+17	518	7552685384807438	CMakeFiles/Data_Structures_Project_DS_A.dir/main.cpp.obj	d06cfb0aca7b2c6b
+519	674	7552685389826347	Data_Structures_Project_DS_A.exe	c2d03beabab0bf54
+17	535	7552685513084861	CMakeFiles/Data_Structures_Project_DS_A.dir/main.cpp.obj	d06cfb0aca7b2c6b
+536	692	7552685518265388	Data_Structures_Project_DS_A.exe	c2d03beabab0bf54
+17	517	7552685632451171	CMakeFiles/Data_Structures_Project_DS_A.dir/main.cpp.obj	d06cfb0aca7b2c6b
+518	679	7552685637464041	Data_Structures_Project_DS_A.exe	c2d03beabab0bf54
+20	586	7552691193457518	CMakeFiles/Data_Structures_Project_DS_A.dir/main.cpp.obj	d06cfb0aca7b2c6b
+587	742	7552691199130837	Data_Structures_Project_DS_A.exe	c2d03beabab0bf54
+20	608	7552691318470773	CMakeFiles/Data_Structures_Project_DS_A.dir/main.cpp.obj	d06cfb0aca7b2c6b
+609	780	7552691324359421	Data_Structures_Project_DS_A.exe	c2d03beabab0bf54
