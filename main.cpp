@@ -8,10 +8,8 @@ template <typename T>
 class Node {
 public:
     T data;
-    int weight;
-    int vehicles;
     Node* next;
-    Node(T value, int weight = 0, int vehicles = 0) : data(value), weight(weight), vehicles(vehicles), next(nullptr) {}
+    Node(T value) : data(value), next(nullptr) {}
 };
 
 template <typename T>
@@ -23,19 +21,8 @@ public:
 
     LinkedList() : head(nullptr), tail(nullptr), size(0) {}
 
-    void push(T value, int weight = 0) {
-        Node<T>* NN = new Node<T>(value, weight);
-        if (!head) {
-            head = tail = NN;
-        } else {
-            NN->next = head;
-            head = NN;
-        }
-        size++;
-    }
-
-    void enqueue(T value, int weight = 0) {
-        Node<T>* NN = new Node<T>(value, weight);
+    void enqueue(T value) {
+        Node<T>* NN = new Node<T>(value);
         if (!tail) {
             head = tail = NN;
         } else {
@@ -48,19 +35,19 @@ public:
     void printList() const {
         Node<T>* current = head;
         while (current) {
-            if (current->next != nullptr)
-                cout << "(" << current->data  << ", "<< current->weight << "), ";
-            else
-                cout << "(" << current->data << ", "<< current->weight << ")";
+            cout << "(" << current->data.destination << ", "
+                 << current->data.weight << ", "
+                 << current->data.vehicles << ")";
+            if (current->next) cout << " -> ";
             current = current->next;
         }
         cout << endl;
     }
 
-    bool contains(const T& value) const {
+    bool contains(const string& value) const {
         Node<T>* current = head;
         while (current) {
-            if (current->data == value) {
+            if (current->data.destination == value) {
                 return true;
             }
             current = current->next;
@@ -77,22 +64,34 @@ public:
     }
 };
 
+class Edge {
+public:
+    string destination;
+    int weight;
+    int vehicles;
+
+    Edge(const string& destination, int weight, int vehicles = 0)
+        : destination(destination), weight(weight), vehicles(vehicles) {}
+};
+
 class GraphNode {
 public:
     string id;
+    bool blocked;
+    LinkedList<Edge> neighbors;
 
-    LinkedList<string> neighbors;
+    GraphNode(const string& id) : id(id), blocked(false) {}
 
-    GraphNode(const string& id) : id(id) {}
-
-    void addNeighbor(const string& neighborId, int weight) {
-        neighbors.enqueue(neighborId, weight);
+    void addNeighbor(const string& neighborId, int weight, int vehicles = 0) {
+        Edge edge(neighborId, weight, vehicles);
+        neighbors.enqueue(edge);
     }
 };
 
 class Graph {
 public:
     LinkedList<GraphNode*> vertices;
+
     GraphNode* findNode(const string& id) {
         Node<GraphNode*>* current = vertices.head;
         while (current) {
@@ -103,6 +102,7 @@ public:
         }
         return nullptr;
     }
+
     ~Graph() {
         Node<GraphNode*>* current = vertices.head;
         while (current) {
@@ -113,23 +113,23 @@ public:
 
     void addNode(const string& id) {
         if (findNode(id)) {
-            return;
+            return;  // Node already exists
         }
         GraphNode* newNode = new GraphNode(id);
         vertices.enqueue(newNode);
     }
 
-    void addEdge(const string& from, const string& to, int weight) {
+    void addEdge(const string& from, const string& to, int weight, int vehicles = 0) {
         GraphNode* fromNode = findNode(from);
         GraphNode* toNode = findNode(to);
 
         if (!fromNode || !toNode) {
-            cout << "Error! Either of the nodes is missing.\n";
+            cout << "Either one of the nodes is missing!\n";
             return;
         }
 
         if (!fromNode->neighbors.contains(to)) {
-            fromNode->addNeighbor(to, weight);
+            fromNode->addNeighbor(to, weight, vehicles);
         }
     }
 
@@ -145,15 +145,17 @@ public:
     void load(const string& filename) {
         ifstream file(filename);
         if (!file.is_open()) {
-            cout << "File doesn't exist.\n ";
+            cout << "Error: Unable to open file " << filename << endl;
             return;
         }
+
         string line;
         getline(file, line);
         while (getline(file, line)) {
             stringstream ss(line);
             string from, to, weightStr;
             int weight;
+
             if (getline(ss, from, ',') && getline(ss, to, ',') && getline(ss, weightStr, ',')) {
                 weight = stoi(weightStr);
                 addNode(from);
@@ -164,7 +166,6 @@ public:
 
         file.close();
     }
-
 };
 
 int main() {
