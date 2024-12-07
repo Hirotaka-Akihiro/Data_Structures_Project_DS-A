@@ -5,22 +5,23 @@ template <typename T>
 class Node {
 public:
     T data;
+    int weight; // Weight associated with the node
     Node* next;
 
-    Node(T value) : data(value), next(nullptr) {}
+    Node(T value, int weight = 0) : data(value), weight(weight), next(nullptr) {}
 };
 
 template <typename T>
 class LinkedList {
-
 public:
     Node<T>* head;
     Node<T>* tail;
     int size;
+
     LinkedList() : head(nullptr), tail(nullptr), size(0) {}
 
-    void push(T value) {
-        Node<T>* NN = new Node<T>(value);
+    void push(T value, int weight = 0) {
+        Node<T>* NN = new Node<T>(value, weight);
         if (!head) {
             head = tail = NN;
         } else {
@@ -48,8 +49,8 @@ public:
         return value;
     }
 
-    void enqueue(T value) {
-        Node<T>* NN = new Node<T>(value);
+    void enqueue(T value, int weight = 0) {
+        Node<T>* NN = new Node<T>(value, weight);
         if (!tail) {
             head = tail = NN;
         } else {
@@ -84,7 +85,7 @@ public:
     void printList() const {
         Node<T>* current = head;
         while (current) {
-            cout << current->data << " ";
+            cout << "(" << current->data << ", " << current->weight << ") ";
             current = current->next;
         }
         cout << endl;
@@ -100,6 +101,14 @@ public:
         }
         return false;
     }
+
+    ~LinkedList() {
+        while (head) {
+            Node<T>* temp = head;
+            head = head->next;
+            delete temp;
+        }
+    }
 };
 
 class GraphNode {
@@ -109,8 +118,8 @@ public:
 
     GraphNode(int id = 0) : id(id) {}
 
-    void addNeighbor(int neighborId) {
-            neighbors.push(neighborId);
+    void addNeighbor(int neighborId, int weight) {
+        neighbors.enqueue(neighborId, weight);
     }
 };
 
@@ -130,6 +139,16 @@ private:
     }
 
 public:
+    Graph() : vertices() {}
+
+    ~Graph() {
+        Node<GraphNode*>* current = vertices.head;
+        while (current) {
+            delete current->data;
+            current = current->next;
+        }
+    }
+
     void addNode(int id) {
         if (findNode(id)) {
             return;
@@ -138,12 +157,15 @@ public:
         vertices.enqueue(newNode);
     }
 
-    void addEdge(int from, int to) {
+    void addEdge(int from, int to, int weight) {
         GraphNode* fromNode = findNode(from);
         GraphNode* toNode = findNode(to);
+        if (!fromNode || !toNode) {
+            cout << "One or both nodes not found. Cannot add edge." << endl;
+            return;
+        }
         if (fromNode && toNode) {
-            fromNode->addNeighbor(to);
-            toNode->addNeighbor(from);
+            fromNode->addNeighbor(to, weight);
         }
     }
 
@@ -222,21 +244,25 @@ int main() {
     graph.addNode(3);
     graph.addNode(4);
     graph.addNode(5);
-    graph.addEdge(1, 2);
-    graph.addEdge(1, 3);
-    graph.addEdge(3, 4);
-    graph.addEdge(3, 2);
-    graph.addEdge(4,1);
-    graph.addEdge(5, 2);
+
+    graph.addEdge(1, 2, 4);
+    graph.addEdge(4, 3, 3);
+    graph.addEdge(2, 5, 2);
+    graph.addEdge(1, 3, 1);
+    graph.addEdge(3, 4, 5);
+    graph.addEdge(3, 2, 6);
+    graph.addEdge(4, 1, 7);
+    graph.addEdge(4, 5, 8);
+    graph.addEdge(5, 2, 9);
 
     cout << "Graph Adjacency List:" << endl;
     graph.printGraph();
 
     cout << "\nBFS Traversal:" << endl;
-    graph.bfs(5);
+    graph.bfs(1);
 
     cout << "\nDFS Traversal:" << endl;
-    graph.dfs(5);
+    graph.dfs(1);
 
     return 0;
 }
