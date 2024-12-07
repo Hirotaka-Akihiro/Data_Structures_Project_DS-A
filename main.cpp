@@ -5,67 +5,67 @@
 using namespace std;
 
 template <typename T>
-class Node {
+class HashTableNode {
 public:
+    string key;
     T data;
-    Node* next;
-    Node(T value) : data(value), next(nullptr) {}
+    bool occupied;
+    HashTableNode(string key = "") : key(key), data(T(key)), occupied(false) {}
 };
 
+const int size = 26;
 template <typename T>
-class LinkedList {
+class HashTable {
 public:
-    Node<T>* head;
-    Node<T>* tail;
-    int size;
+    HashTableNode<T> arr[size];
 
-    LinkedList() : head(nullptr), tail(nullptr), size(0) {}
-    void enqueue(T value) {
-        Node<T>* NN = new Node<T>(value);
-        if (!tail) {
-            head = tail = NN;
-        } else {
-            tail->next = NN;
-            tail = NN;
+    HashTable() {
+        for (int i = 0; i < size; ++i) {
+            arr[i] = HashTableNode<T>();
         }
-        size++;
     }
-    void printList() const {
-        Node<T>* current = head;
-        while (current) {
-            cout << "(" << current->data.destination << ", "
-                 << current->data.weight << ", "
-                 << current->data.vehicles << ")";
-            if (current->next) cout << " -> ";
-            current = current->next;
-        }
-        cout << endl;
+
+    int hash(string key) {
+        return (key[0] - 'A') % size;
     }
-    T* get(const string& value) {
-        Node<T>* current = head;
-        while (current) {
-            if (current->data.destination == value) {
-                return &current->data;
+
+    void insert(string key, T val) {
+        int h = hash(key);
+        for (int i = 0; i < size; ++i) {
+            if (!arr[h].occupied) {
+                arr[h].key = key;
+                arr[h].data = val;
+                arr[h].occupied = true;
+                return;
             }
-            current = current->next;
+            h = (h + 1) % size;
+        }
+    }
+
+    T* search(string key) {
+        int h = hash(key);
+        for (int i = 0; i < size; ++i) {
+            if (arr[h].occupied && arr[h].key == key) {
+                return &arr[h].data;
+            }
+            h = (h + 1) % size;
         }
         return nullptr;
     }
-    bool contains(const string& value) const {
-        Node<T>* current = head;
-        while (current) {
-            if (current->data.destination == value) {
-                return true;
-            }
-            current = current->next;
-        }
-        return false;
+
+    bool contains(string key) {
+        return search(key) != nullptr;
     }
-    ~LinkedList() {
-        while (head) {
-            Node<T>* temp = head;
-            head = head->next;
-            delete temp;
+
+    void printList() {
+        for (int i = 0; i < size; ++i) {
+            if (arr[i].occupied) {
+                cout << "(" << arr[i].data.destination << ", "
+                     << arr[i].data.weight << ", "
+                     << arr[i].data.vehicles << ")";
+                if (i != size-1)
+                    cout << " -> ";
+            }
         }
     }
 };
@@ -76,8 +76,9 @@ public:
     int weight;
     int vehicles;
     bool blocked;
-    Edge(const string& destination, int weight, int vehicles = 0)
+    Edge(const string& destination = "", int weight = 0, int vehicles = 0)
         : destination(destination), weight(weight), vehicles(vehicles), blocked(false) {}
+
     void block() { blocked = true; }
     void unblock() { blocked = false; }
 };
@@ -85,49 +86,41 @@ public:
 class GraphNode {
 public:
     string id;
-    LinkedList<Edge> neighbors;
+    HashTable<Edge> neighbors;
 
-    GraphNode(const string& id) : id(id) {}
-    void addNeighbor(const string& neighborId, int weight, int vehicles = 0) {
+    GraphNode(string& id) : id(id) {}
+
+    void addNeighbor(string& neighborId, int weight, int vehicles = 0) {
         Edge edge(neighborId, weight, vehicles);
-        neighbors.enqueue(edge);
+        neighbors.insert(neighborId, edge);
     }
-    Edge* getEdge(const string& neighborId) {
-        return neighbors.get(neighborId);
+
+    Edge* getEdge(string& neighborId) {
+        return neighbors.search(neighborId);
     }
 };
 
 class Graph {
 public:
-    LinkedList<GraphNode*> vertices;
+    HashTable<GraphNode> vertices;  // Store GraphNode objects, not pointers
 
-    GraphNode* findNode(const string& id) {
-        Node<GraphNode*>* current = vertices.head;
-        while (current) {
-            if (current->data->id == id) {
-                return current->data;
-            }
-            current = current->next;
-        }
-        return nullptr;
+    // Find a node by id (returns a reference to the GraphNode)
+    GraphNode* findNode(string& id) {
+        GraphNode* node = vertices.search(id);
+        return node;  // returns the pointer to the GraphNode object
     }
 
-    ~Graph() {
-        Node<GraphNode*>* current = vertices.head;
-        while (current) {
-            delete current->data;
-            current = current->next;
-        }
-    }
-
-    void addNode(const string& id) {
+    // Add a node to the graph
+    void addNode(string& id) {
         if (findNode(id)) {
             return;  // Node already exists
         }
-        GraphNode* newNode = new GraphNode(id);
-        vertices.enqueue(newNode);
+        GraphNode newNode(id);  // Create a new GraphNode
+        vertices.insert(id, newNode);  // Insert the GraphNode object into the HashTable
     }
-    Edge* getEdge(const string& from, const string& to) {
+
+    // Get the edge between two nodes
+    Edge* getEdge(string& from, string& to) {
         GraphNode* fromNode = findNode(from);
         if (!fromNode) {
             cout << "Invalid nodes.\n";
@@ -135,7 +128,26 @@ public:
         }
         return fromNode->getEdge(to);
     }
-    void addEdge(const string& from, const string& to, int weight, int vehicles = 0) {
+
+    // Block an edge between two nodes
+    void blockEdge(string from, string to) {
+        GraphNode* fromNode = findNode(from);
+        if (!fromNode) {
+            cout << "Node '" << from << "' doesn't exist.\n";
+            return;
+        }
+        Edge* edge = fromNode->neighbors.search(to);
+        if (edge) {
+            edge->block();
+            cout << "Road blocked from " << from << " to " << to << endl;
+        }
+        else {
+            cout << "Road doesn't exist.\n";
+        }
+    }
+
+    // Add an edge between two nodes
+    void addEdge(string& from, string& to, int weight, int vehicles = 0) {
         GraphNode* fromNode = findNode(from);
         GraphNode* toNode = findNode(to);
 
@@ -144,36 +156,43 @@ public:
             return;
         }
 
+        // Add edge between fromNode and toNode
         if (!fromNode->neighbors.contains(to)) {
             fromNode->addNeighbor(to, weight, vehicles);
         }
     }
 
-    void printGraph() const {
-        Node<GraphNode*>* current = vertices.head;
-        while (current) {
-            cout << current->data->id << " -> ";
-            current->data->neighbors.printList();
-            current = current->next;
+    // Print the entire graph
+    void printGraph() {
+        for (int i = 0; i < size; ++i) {
+            if (vertices.arr[i].occupied) {
+                cout << vertices.arr[i].data.id << " -> ";
+                vertices.arr[i].data.neighbors.printList();
+                cout << endl;
+            }
         }
     }
+
+    // Show blocked roads
     void showBlocked() {
         cout << "------ Blocked Roads ------" << endl;
-        Node<GraphNode*>* current = vertices.head;
-        while (current) {
-            GraphNode* node = current->data;
-            Node<Edge>* edgeNode = node->neighbors.head;
-            while (edgeNode) {
-                if (edgeNode->data.blocked) {
-                    cout << node->id << " to "
-                         << edgeNode->data.destination << " is blocked.\n";
+        for (int i = 0; i < size; ++i) {
+            if (vertices.arr[i].occupied) {
+                GraphNode& node = vertices.arr[i].data;  // Use reference to GraphNode object
+                for (int j = 0; j < size; ++j) {
+                    if (node.neighbors.arr[j].occupied) {
+                        Edge& edge = node.neighbors.arr[j].data;
+                        if (edge.blocked) {
+                            cout << node.id << " to " << edge.destination << " is blocked.\n";
+                        }
+                    }
                 }
-                edgeNode = edgeNode->next;
             }
-            current = current->next;
         }
     }
-    void loadBlocked(const string& filename) {
+
+    // Load blocked roads from a file
+    void loadBlocked(string filename) {
         ifstream file(filename);
         if (!file.is_open()) {
             cout << "File doesn't exist.\n";
@@ -188,22 +207,14 @@ public:
             string from, to, status;
             if (getline(ss, from, ',') && getline(ss, to, ',') && getline(ss, status, ',')) {
                 if (status == "Blocked") {
-                    Edge* edge = getEdge(from, to);
-                    if (edge) {
-                        edge->block();
-                        cout << "Road blocked from " << from << " to " << to << endl;
-                    }
-                    else {
-                        cout << "Road doesn't exist.\n";
-                    }
-
+                    blockEdge(from, to);
                 }
             }
         }
-
         file.close();
     }
-    void loadNetwork(const string& filename) {
+
+    void loadNetwork(string filename) {
         ifstream file(filename);
         if (!file.is_open()) {
             cout << "File doesn't exist.\n";
@@ -228,6 +239,7 @@ public:
     }
 };
 
+
 int main() {
     Graph graph;
 
@@ -236,6 +248,8 @@ int main() {
 
     cout << "Graph Adjacency List:" << endl;
     graph.printGraph();
+    graph.showBlocked();
+    graph.blockEdge("Y", "Z");
     graph.showBlocked();
     return 0;
 }
