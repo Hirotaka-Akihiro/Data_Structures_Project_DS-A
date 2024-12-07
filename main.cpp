@@ -5,6 +5,116 @@
 using namespace std;
 
 template <typename T>
+class Node {
+public:
+    T data;
+    Node* next;
+
+    Node(T value) : data(value), next(nullptr) {}
+};
+
+template <typename T>
+class LinkedList {
+
+public:
+    Node<T>* head;
+    Node<T>* tail;
+    int size;
+    LinkedList() : head(nullptr), tail(nullptr), size(0) {}
+    void printList() {
+        Node<T>* current = head;
+        while (current) {
+            cout << "(" << current->data.destination << ", "
+                 << current->data.weight << ", "
+                 << current->data.vehicles << ")";
+            if (current->next) cout << " -> ";
+            current = current->next;
+        }
+        cout << endl;
+    }
+    void push(T value) {
+        Node<T>* NN = new Node<T>(value);
+        if (!head) {
+            head = tail = NN;
+        } else {
+            NN->next = head;
+            head = NN;
+        }
+        size++;
+    }
+    T* get(string& value) {
+        Node<T>* current = head;
+        while (current) {
+            if (current->data.destination == value) {
+                return &current->data;
+            }
+            current = current->next;
+        }
+        return nullptr;
+    }
+    T pop() {
+        if (!head) {
+            return T();
+        }
+
+        Node<T>* temp = head;
+        T value = temp->data;
+        head = head->next;
+
+        if (!head) {
+            tail = nullptr;
+        }
+
+        delete temp;
+        size--;
+        return value;
+    }
+
+    void enqueue(T value) {
+        Node<T>* NN = new Node<T>(value);
+        if (!tail) {
+            head = tail = NN;
+        } else {
+            tail->next = NN;
+            tail = NN;
+        }
+        size++;
+    }
+
+    T dequeue() {
+        if (!head) {
+            return T();
+        }
+
+        Node<T>* temp = head;
+        T value = temp->data;
+        head = head->next;
+
+        if (!head) {
+            tail = nullptr;
+        }
+
+        delete temp;
+        size--;
+        return value;
+    }
+
+    bool isEmpty() {
+        return head == nullptr;
+    }
+    bool contains(string& value) {
+        Node<T>* current = head;
+        while (current) {
+            if (current->data.destination == value) {
+                return true;
+            }
+            current = current->next;
+        }
+        return false;
+    }
+
+};
+template <typename T>
 class HashTableNode {
 public:
     string key;
@@ -86,28 +196,29 @@ public:
 class GraphNode {
 public:
     string id;
-    HashTable<Edge> neighbors;
+    LinkedList<Edge> neighbors;
 
-    GraphNode(string& id) : id(id) {}
+    GraphNode(string id) : id(id) {}
 
     void addNeighbor(string& neighborId, int weight, int vehicles = 0) {
-        Edge edge(neighborId, weight, vehicles);
-        neighbors.insert(neighborId, edge);
+        if (!neighbors.contains(neighborId)) {
+            neighbors.enqueue(Edge(neighborId, weight, vehicles));
+        }
     }
 
     Edge* getEdge(string& neighborId) {
-        return neighbors.search(neighborId);
+        return neighbors.get(neighborId);
     }
 };
 
 class Graph {
 public:
-    HashTable<GraphNode> vertices;  // Store GraphNode objects, not pointers
+    HashTable<GraphNode> vertices;
 
-    // Find a node by id (returns a reference to the GraphNode)
+    // Find a node by id (
     GraphNode* findNode(string& id) {
         GraphNode* node = vertices.search(id);
-        return node;  // returns the pointer to the GraphNode object
+        return node;
     }
 
     // Add a node to the graph
@@ -136,15 +247,15 @@ public:
             cout << "Node '" << from << "' doesn't exist.\n";
             return;
         }
-        Edge* edge = fromNode->neighbors.search(to);
+        Edge* edge = fromNode->getEdge(to);
         if (edge) {
             edge->block();
             cout << "Road blocked from " << from << " to " << to << endl;
-        }
-        else {
+        } else {
             cout << "Road doesn't exist.\n";
         }
     }
+
 
     // Add an edge between two nodes
     void addEdge(string& from, string& to, int weight, int vehicles = 0) {
@@ -168,7 +279,6 @@ public:
             if (vertices.arr[i].occupied) {
                 cout << vertices.arr[i].data.id << " -> ";
                 vertices.arr[i].data.neighbors.printList();
-                cout << endl;
             }
         }
     }
@@ -178,14 +288,13 @@ public:
         cout << "------ Blocked Roads ------" << endl;
         for (int i = 0; i < size; ++i) {
             if (vertices.arr[i].occupied) {
-                GraphNode& node = vertices.arr[i].data;  // Use reference to GraphNode object
-                for (int j = 0; j < size; ++j) {
-                    if (node.neighbors.arr[j].occupied) {
-                        Edge& edge = node.neighbors.arr[j].data;
-                        if (edge.blocked) {
-                            cout << node.id << " to " << edge.destination << " is blocked.\n";
-                        }
+                GraphNode& node = vertices.arr[i].data;
+                Node<Edge>* current = node.neighbors.head;
+                while (current) {
+                    if (current->data.blocked) {
+                        cout << node.id << " to " << current->data.destination << " is blocked.\n";
                     }
+                    current = current->next;
                 }
             }
         }
@@ -198,7 +307,6 @@ public:
             cout << "File doesn't exist.\n";
             return;
         }
-
         string line;
         getline(file, line);
 
@@ -213,7 +321,7 @@ public:
         }
         file.close();
     }
-
+    // Read road network inputs from csv
     void loadNetwork(string filename) {
         ifstream file(filename);
         if (!file.is_open()) {
