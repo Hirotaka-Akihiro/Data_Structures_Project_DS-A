@@ -43,7 +43,16 @@ public:
         }
         cout << endl;
     }
-
+    T* get(const string& value) {
+        Node<T>* current = head;
+        while (current) {
+            if (current->data.destination == value) {
+                return &current->data;
+            }
+            current = current->next;
+        }
+        return nullptr;
+    }
     bool contains(const string& value) const {
         Node<T>* current = head;
         while (current) {
@@ -69,22 +78,26 @@ public:
     string destination;
     int weight;
     int vehicles;
-
+    bool blocked;
     Edge(const string& destination, int weight, int vehicles = 0)
-        : destination(destination), weight(weight), vehicles(vehicles) {}
+        : destination(destination), weight(weight), vehicles(vehicles), blocked(false) {}
+    void block() { blocked = true; }
+    void unblock() { blocked = false; }
 };
 
 class GraphNode {
 public:
     string id;
-    bool blocked;
     LinkedList<Edge> neighbors;
 
-    GraphNode(const string& id) : id(id), blocked(false) {}
+    GraphNode(const string& id) : id(id) {}
 
     void addNeighbor(const string& neighborId, int weight, int vehicles = 0) {
         Edge edge(neighborId, weight, vehicles);
         neighbors.enqueue(edge);
+    }
+    Edge* getEdge(const string& neighborId) {
+        return neighbors.get(neighborId);
     }
 };
 
@@ -118,7 +131,14 @@ public:
         GraphNode* newNode = new GraphNode(id);
         vertices.enqueue(newNode);
     }
-
+    Edge* getEdge(const string& from, const string& to) {
+        GraphNode* fromNode = findNode(from);
+        if (!fromNode) {
+            cout << "Invalid nodes.\n";
+            return nullptr;
+        }
+        return fromNode->getEdge(to);
+    }
     void addEdge(const string& from, const string& to, int weight, int vehicles = 0) {
         GraphNode* fromNode = findNode(from);
         GraphNode* toNode = findNode(to);
@@ -141,8 +161,50 @@ public:
             current = current->next;
         }
     }
+    void showBlocked() {
+        cout << "------ Blocked Roads ------" << endl;
+        Node<GraphNode*>* current = vertices.head;
+        while (current) {
+            GraphNode* node = current->data;
+            Node<Edge>* edgeNode = node->neighbors.head;
+            while (edgeNode) {
+                if (edgeNode->data.blocked) {
+                    cout << "Blocked road from " << node->id << " to "
+                         << edgeNode->data.destination << endl;
+                }
+                edgeNode = edgeNode->next;
+            }
+            current = current->next;
+        }
+    }
+    void loadBlocked(const string& filename) {
+        ifstream file(filename);
+        if (!file.is_open()) {
+            cout << "Error: Unable to open file " << filename << endl;
+            return;
+        }
 
-    void load(const string& filename) {
+        string line;
+        getline(file, line);
+        while (getline(file, line)) {
+            stringstream ss(line);
+            string from, to, status;
+            if (getline(ss, from, ',') && getline(ss, to, ',') && getline(ss, status, ',')) {
+                if (status == "Blocked") {
+                    Edge* edge = getEdge(from, to);
+                    if (edge) {
+                        edge->block();
+                        cout << "Road blocked from " << from << " to " << to << endl;
+                    }
+                    else
+                        cout << "Road doesn't exist.\n";
+                }
+            }
+        }
+
+        file.close();
+    }
+    void loadNetwork(const string& filename) {
         ifstream file(filename);
         if (!file.is_open()) {
             cout << "Error: Unable to open file " << filename << endl;
@@ -155,7 +217,6 @@ public:
             stringstream ss(line);
             string from, to, weightStr;
             int weight;
-
             if (getline(ss, from, ',') && getline(ss, to, ',') && getline(ss, weightStr, ',')) {
                 weight = stoi(weightStr);
                 addNode(from);
@@ -171,10 +232,11 @@ public:
 int main() {
     Graph graph;
 
-    graph.load("road_network.csv");
-
+    graph.loadNetwork("road_network.csv");
+    graph.loadBlocked("road_closures.csv");
     cout << "Graph Adjacency List:" << endl;
     graph.printGraph();
+    graph.showBlocked();
 
     return 0;
 }
