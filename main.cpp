@@ -21,6 +21,7 @@ public:
     Node<T>* tail;
     int size;
     LinkedList() : head(nullptr), tail(nullptr), size(0) {}
+    // Displays the road network.
     void printList() {
         Node<T>* current = head;
         while (current) {
@@ -32,6 +33,7 @@ public:
         }
         cout << endl;
     }
+    // Push function for linked list to serve as a stack.
     void push(T value) {
         Node<T>* NN = new Node<T>(value);
         if (!head) {
@@ -42,6 +44,7 @@ public:
         }
         size++;
     }
+    // Meant for returning a pointer to an Edge object if the destination i.e 'from' is present.
     T* get(string& value) {
         Node<T>* current = head;
         while (current) {
@@ -52,6 +55,7 @@ public:
         }
         return nullptr;
     }
+    // Pop function for linked list to serve as a stack.
     T pop() {
         if (!head) {
             return T();
@@ -69,7 +73,7 @@ public:
         size--;
         return value;
     }
-
+    // Enqueue function for linked list to serve as a queue.
     void enqueue(T value) {
         Node<T>* NN = new Node<T>(value);
         if (!tail) {
@@ -80,28 +84,26 @@ public:
         }
         size++;
     }
-
+    // Dequeue function for linked list to serve as a queue.
     T dequeue() {
         if (!head) {
             return T();
         }
-
         Node<T>* temp = head;
         T value = temp->data;
         head = head->next;
-
         if (!head) {
             tail = nullptr;
         }
-
         delete temp;
         size--;
         return value;
     }
-
+    // Checks if linked list is empty.
     bool isEmpty() {
         return head == nullptr;
     }
+    // Checks if an Edge's destination i.e 'from' is present.
     bool contains(string& value) {
         Node<T>* current = head;
         while (current) {
@@ -112,7 +114,17 @@ public:
         }
         return false;
     }
-
+    // Checks if linked list contains a string.
+    bool containsString(string value) {
+        Node<T>* current = head;
+        while (current) {
+            if (current->data == value) {
+                return true;
+            }
+            current = current->next;
+        }
+        return false;
+    }
 };
 template <typename T>
 class HashTableNode {
@@ -123,22 +135,21 @@ public:
     HashTableNode(string key = "") : key(key), data(T(key)), occupied(false) {}
 };
 
-const int size = 26;
+const int size = 26; // Size of the hash table.
 template <typename T>
 class HashTable {
 public:
     HashTableNode<T> arr[size];
-
     HashTable() {
         for (int i = 0; i < size; ++i) {
             arr[i] = HashTableNode<T>();
         }
     }
-
+    // Hashes the string key into an integer index.
     int hash(string key) {
         return (key[0] - 'A') % size;
     }
-
+    // Inserts a key-value pair to the hashtable.
     void insert(string key, T val) {
         int h = hash(key);
         for (int i = 0; i < size; ++i) {
@@ -151,7 +162,7 @@ public:
             h = (h + 1) % size;
         }
     }
-
+    // Returns a pointer to the object.
     T* search(string key) {
         int h = hash(key);
         for (int i = 0; i < size; ++i) {
@@ -162,11 +173,11 @@ public:
         }
         return nullptr;
     }
-
+    // Checks if it contains a key.
     bool contains(string key) {
         return search(key) != nullptr;
     }
-
+    // Prints the list.
     void printList() {
         for (int i = 0; i < size; ++i) {
             if (arr[i].occupied) {
@@ -199,13 +210,13 @@ public:
     LinkedList<Edge> neighbors;
 
     GraphNode(string id) : id(id) {}
-
+    // Appends a neighbor to the intersection.
     void addNeighbor(string& neighborId, int weight, int vehicles = 0) {
         if (!neighbors.contains(neighborId)) {
             neighbors.enqueue(Edge(neighborId, weight, vehicles));
         }
     }
-
+    // Returns the edge that points to a neighbor
     Edge* getEdge(string& neighborId) {
         return neighbors.get(neighborId);
     }
@@ -299,6 +310,65 @@ public:
             }
         }
     }
+    void bfs(string startId) {
+        GraphNode* start = findNode(startId);
+        if (!start) {
+            cout << "Start node not found!" << endl;
+            return;
+        }
+
+        LinkedList<string> queue;
+        LinkedList<string> visited;
+
+        queue.enqueue(startId);
+
+        while (!queue.isEmpty()) {
+            string currentId = queue.dequeue();
+
+            if (!visited.containsString(currentId)) {
+                cout << currentId << " ";
+                visited.enqueue(currentId);
+
+                GraphNode* currentNode = findNode(currentId);
+                if (currentNode) {
+                    Node<Edge>* neighbor = currentNode->neighbors.head;
+                    while (neighbor) {
+                        if (!visited.containsString(neighbor->data.destination)) {
+                            queue.enqueue(neighbor->data.destination);
+                        }
+                        neighbor = neighbor->next;
+                    }
+                }
+            }
+        }
+        cout << endl;
+    }
+
+    void dfsHelper(string nodeId, LinkedList<string>& visited) {
+        if (visited.containsString(nodeId)) {
+            return;
+        }
+
+        cout << nodeId << " ";
+        visited.enqueue(nodeId);
+
+        GraphNode* node = findNode(nodeId);
+        if (node) {
+            Node<Edge>* neighbor = node->neighbors.head;
+            while (neighbor) {
+                if (!visited.containsString(neighbor->data.destination)) {
+                    dfsHelper(neighbor->data.destination, visited);
+                }
+                neighbor = neighbor->next;
+            }
+        }
+    }
+    // Depth first search function
+    void dfs(string startId) {
+        LinkedList<string> visited;
+        dfsHelper(startId, visited);
+        cout << endl;
+    }
 
     // Load blocked roads from a file
     void loadBlocked(string filename) {
@@ -359,5 +429,7 @@ int main() {
     graph.showBlocked();
     graph.blockEdge("Y", "Z");
     graph.showBlocked();
+    graph.bfs("A");
+    graph.dfs("A");
     return 0;
 }
