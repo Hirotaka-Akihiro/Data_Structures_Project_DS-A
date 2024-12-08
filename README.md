@@ -113,3 +113,5 @@
   
   This simulation provides a comprehensive model for managing and analyzing a city's traffic network. It can be extended and customized for various urban planning and traffic management applications.
 </div>
+![image](https://github.com/user-attachments/assets/67abdeab-ca54-4ec9-a5ae-42ae910ca2e5)
+
