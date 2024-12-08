@@ -436,6 +436,7 @@ public:
 
 class Graph {
 public:
+    int timer = 0;
     HashTable<GraphNode> vertices;
     LinkedList<Vehicles> vehicles;
     MinHeap<Vehicles> emergencyVehicles;
@@ -768,7 +769,7 @@ public:
         }
         file.close();
     }
-
+    // Loads all csv files.
     void load() {
         loadNetwork("road_network.csv");
         loadBlocked("road_closures.csv");
@@ -776,6 +777,7 @@ public:
         loadEmergencyVehicles("emergency_vehicles.csv");
         loadSignals("traffic_signals.csv");
     }
+
     // Dijkstras algorithm for finding the shortest path.
     void dijkstra(string startId, string targetId, bool ignoreBlocked = 0) {
         if (!findNode(startId) || !findNode(targetId)) {
@@ -839,16 +841,12 @@ public:
     // Show shortest path for all emergency vehicles, ignoring all traffick lights.
     void showEmergencyVehiclePaths() {
         cout << "------ All Emergency Vehicle Shortest Paths ------" << endl;
-
         Node<MinHeapNode<Vehicles>> *current = emergencyVehicles.heap.head;
         while (current) {
             MinHeapNode<Vehicles>& vehicleNode = current->data;
             Vehicles& vehicle = vehicleNode.id;
             cout << "Emergency Vehicle " << vehicle.id << " from " << vehicle.start << " to " << vehicle.end << ":" << endl;
-
-            // Call Dijkstra's algorithm with ignoreBlocked = true
             dijkstra(vehicle.start, vehicle.end, true);
-
             cout << endl;
             current = current->next;
         }
@@ -977,6 +975,24 @@ public:
             cout << "No path found for vehicle " << id << " from " << from << " to " << to << endl;
         }
     }
+
+    // Toggle all roads blocked status when greenTime is up
+    void changeTrafficLights() {
+        for (int i = 0; i < size; ++i) {
+            if (vertices.arr[i].occupied) {
+                GraphNode& node = vertices.arr[i].data;
+                if (timer % node.greenTime == 0) {
+                    Node<Edge>* current = node.neighbors.head;
+                    while (current) {
+                        current->data.blocked = !current->data.blocked;
+                        current = current->next;
+                    }
+                }
+            }
+        }
+    }
+
+    // Display the menu.
     void displayMenu() {
         bool quit = true;
         while (quit) {
@@ -1086,6 +1102,8 @@ public:
                     break;
                 }
             }
+            this->timer += 10;
+            this->changeTrafficLights();
         }
     }
 };
