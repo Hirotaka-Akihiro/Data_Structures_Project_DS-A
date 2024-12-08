@@ -2,9 +2,10 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <climits>
 using namespace std;
 
-const int size = 26; // Size of the hash table.
+const int sizeX = 26; // sizeX of the hash table.
 
 template <typename T>
 class Node {
@@ -240,25 +241,25 @@ public:
 template <typename T>
 class HashTable {
 public:
-    HashTableNode<T> arr[size];
+    HashTableNode<T> arr[sizeX];
 
     HashTable() {
-        for (int i = 0; i < size; ++i) {
+        for (int i = 0; i < sizeX; ++i) {
             arr[i] = HashTableNode<T>();
         }
     }
     // Hashes the string key into an integer index.
     int hash(string key) {
-        return (key[0] - 'A' + size) % size;
+        return (key[0] - 'A' + sizeX) % sizeX;
     }
     // Subscript operator overloading.
     T& operator[](const string& key) {
         int h = hash(key);
-        for (int i = 0; i < size; ++i) {
+        for (int i = 0; i < sizeX; ++i) {
             if (arr[h].occupied && arr[h].key == key) {
                 return arr[h].data;  // Return a reference to the data
             }
-            h = (h + 1) % size;
+            h = (h + 1) % sizeX;
         }
         // If key is not found, insert it with a default value.
         insert(key, T());
@@ -268,7 +269,7 @@ public:
     // Insert a key-value pair into the hash table.
     void insert(string key, T val) {
         int h = hash(key);
-        for (int i = 0; i < size; ++i) {
+        for (int i = 0; i < sizeX; ++i) {
             if (arr[h].occupied && arr[h].key == key) {
                 arr[h].data = val; // Update the value if key exists
                 return;
@@ -279,18 +280,18 @@ public:
                 arr[h].occupied = true;
                 return;
             }
-            h = (h + 1) % size;
+            h = (h + 1) % sizeX;
         }
     }
 
     // Returns a reference to the object.
     T* search(string key) {
         int h = hash(key);
-        for (int i = 0; i < size; ++i) {
+        for (int i = 0; i < sizeX; ++i) {
             if (arr[h].occupied && arr[h].key == key) {
                 return &arr[h].data;
             }
-            h = (h + 1) % size;
+            h = (h + 1) % sizeX;
         }
         return nullptr;
     }
@@ -302,12 +303,12 @@ public:
 
     // Prints the list.
     void printList() {
-        for (int i = 0; i < size; ++i) {
+        for (int i = 0; i < sizeX; ++i) {
             if (arr[i].occupied) {
                 cout << "(" << arr[i].data.destination << ", "
                      << arr[i].data.weight << ", "
                      << arr[i].data.vehicles << ")";
-                if (i != size-1)
+                if (i != sizeX-1)
                     cout << " -> ";
             }
         }
@@ -531,7 +532,7 @@ public:
     // Print the entire graph
     void printGraph() {
         cout << "------ City Traffic Network ------" << endl;
-        for (int i = 0; i < size; ++i) {
+        for (int i = 0; i < sizeX; ++i) {
             if (vertices.arr[i].occupied) {
                 cout << vertices.arr[i].data.id << " -> ";
                 vertices.arr[i].data.neighbors.printList();
@@ -560,7 +561,7 @@ public:
     // Show blocked roads
     void showBlocked() {
         cout << "------ Blocked Roads ------" << endl;
-        for (int i = 0; i < size; ++i) {
+        for (int i = 0; i < sizeX; ++i) {
             if (vertices.arr[i].occupied) {
                 GraphNode& node = vertices.arr[i].data;
                 Node<Edge>* current = node.neighbors.head;
@@ -577,7 +578,7 @@ public:
     // Show traffic signals.
     void showTraffic() {
         cout << "------ Traffic Signal Status ------" << endl;
-        for (int i = 0; i < size; ++i) {
+        for (int i = 0; i < sizeX; ++i) {
             if (vertices.arr[i].occupied) {
                 GraphNode& node = vertices.arr[i].data;
                 cout << "Intersection " << node.id << " Green Time: " << node.greenTime << "s" << endl;
@@ -782,7 +783,7 @@ public:
         HashTable<int> distances;
         HashTable<string> predecessors;
 
-        for (int i = 0; i < size; ++i) {
+        for (int i = 0; i < sizeX; ++i) {
             if (vertices.arr[i].occupied) {
                 distances[vertices.arr[i].data.id] = INT_MAX;
                 predecessors[vertices.arr[i].data.id] = "";
@@ -872,7 +873,7 @@ public:
     void showCongestion() {
         cout << "------ Congestion Status ------" << endl;
 
-        for (int i = 0; i < size; ++i) {
+        for (int i = 0; i < sizeX; ++i) {
             if (vertices.arr[i].occupied) {
                 GraphNode& node = vertices.arr[i].data;
                 Node<Edge>* current = node.neighbors.head;
@@ -894,7 +895,7 @@ public:
         HashTable<string> predecessors;
 
         // Initialize distances and predecessors
-        for (int i = 0; i < size; ++i) {
+        for (int i = 0; i < sizeX; ++i) {
             if (vertices.arr[i].occupied) {
                 distances[vertices.arr[i].data.id] = INT_MAX;
                 predecessors[vertices.arr[i].data.id] = "";
@@ -971,7 +972,7 @@ public:
 
     // Toggle all roads blocked status when greenTime is up
     void changeTrafficLights() {
-        for (int i = 0; i < size; ++i) {
+        for (int i = 0; i < sizeX; ++i) {
             if (vertices.arr[i].occupied) {
                 GraphNode& node = vertices.arr[i].data;
                 if (timer % node.greenTime == 0) {
