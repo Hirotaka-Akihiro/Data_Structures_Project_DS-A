@@ -2,8 +2,8 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <type_traits>
 using namespace std;
-#include <bits/stdc++.h>
 
 template <typename T>
 class Node {
@@ -114,6 +114,31 @@ public:
     // Checks if linked list is empty.
     bool isEmpty() {
         return head == nullptr;
+    }
+    void display() {
+        Node<T>* current = head;
+        while (current) {
+            if (current->next)
+                cout << current->data << " -> ";
+            else
+                cout << current->data;
+            current = current->next;
+        }
+    }
+    // Reverses the linked list.
+    void reverse() {
+        Node<T>* prev = nullptr;
+        Node<T>* current = head;
+        Node<T>* next = nullptr;
+
+        while (current != nullptr) {
+            next = current->next;
+            current->next = prev;
+            prev = current;
+            current = next;
+        }
+
+        head = prev;
     }
     // Checks if an Edge's destination i.e 'from' is present.
     bool contains(string& value) {
@@ -228,12 +253,13 @@ public:
     void unblock() { blocked = false; }
 };
 
+template <typename T>
 class MinHeapNode {
 public:
-    string id;
+    T id;
     int priority;
 
-    MinHeapNode(string id = "", int priority = INT_MAX)
+    MinHeapNode(T id = T(), int priority = INT_MAX)
         : id(id), priority(priority) {}
 
     bool operator<(MinHeapNode a) {
@@ -245,14 +271,15 @@ public:
     }
 };
 
+template <typename T>
 class MinHeap {
 public:
-    LinkedList<MinHeapNode> heap;  // Underlying structure for the heap
-    HashTable<Node<MinHeapNode>> hashMap;  // HashMap to store objects of MinHeapNode
+    LinkedList<MinHeapNode<T>> heap;  // Underlying structure for the heap
+    HashTable<Node<MinHeapNode<T>>> hashMap;  // HashMap to store objects of MinHeapNode
 
     // Inserts a new node into the heap
-    void insert(string id, int priority) {
-        Node<MinHeapNode> *existingNode = hashMap.search(id);
+    void insert(T id, int priority) {
+        Node<MinHeapNode<T>>* existingNode = hashMap.search(id);
         if (existingNode) {
             if (existingNode->data.priority > priority) {
                 existingNode->data.priority = priority;  // Update priority if it's better
@@ -260,13 +287,14 @@ public:
             return;
         }
 
-        MinHeapNode newNode(id, priority);
+        MinHeapNode<T> newNode(id, priority);
         heap.enqueue(newNode);
         hashMap.insert(id, *heap.tail);  // Store the object in the HashMap
     }
+
     // Helper function to swap data between two nodes
-    void swap(Node<MinHeapNode>* a, Node<MinHeapNode>* b) {
-        MinHeapNode temp = a->data;
+    void swap(Node<MinHeapNode<T>>* a, Node<MinHeapNode<T>>* b) {
+        MinHeapNode<T> temp = a->data;
         a->data = b->data;
         b->data = temp;
 
@@ -275,9 +303,9 @@ public:
     }
 
     // Finds the node with the minimum priority
-    Node<MinHeapNode>* findMinNode() {
-        Node<MinHeapNode>* minNode = heap.head;
-        Node<MinHeapNode>* current = heap.head;
+    Node<MinHeapNode<T>>* findMinNode() {
+        Node<MinHeapNode<T>>* minNode = heap.head;
+        Node<MinHeapNode<T>>* current = heap.head;
 
         while (current) {
             if (current->data.priority < minNode->data.priority) {
@@ -287,23 +315,24 @@ public:
         }
         return minNode;
     }
+
     // Extracts the node with the minimum priority
-    MinHeapNode getMin() {
+    MinHeapNode<T> getMin() {
         if (heap.isEmpty()) {
-            return MinHeapNode();
+            return MinHeapNode<T>();
         }
 
-        Node<MinHeapNode>* minNode = findMinNode();
-        MinHeapNode minValue = minNode->data;
+        Node<MinHeapNode<T>>* minNode = findMinNode();
+        MinHeapNode<T> minValue = minNode->data;
 
         // Remove from the hashMap
-        hashMap.insert(minNode->data.id, Node<MinHeapNode>());  // Replace with an empty node
+        hashMap.insert(minNode->data.id, Node<MinHeapNode<T>>());  // Replace with an empty node
 
         // Remove from the list
         if (minNode == heap.head) {
             heap.dequeue();
         } else {
-            Node<MinHeapNode>* current = heap.head;
+            Node<MinHeapNode<T>>* current = heap.head;
             while (current->next != minNode) {
                 current = current->next;
             }
@@ -318,7 +347,6 @@ public:
         return minValue;
     }
 
-
     // Checks if the heap is empty
     bool isEmpty() {
         return heap.isEmpty();
@@ -326,7 +354,7 @@ public:
 
     // Prints the heap (for debugging)
     void printHeap() {
-        Node<MinHeapNode>* current = heap.head;
+        Node<MinHeapNode<T>>* current = heap.head;
         while (current) {
             cout << "(" << current->data.id << ", " << current->data.priority << ")";
             if (current->next) {
@@ -355,11 +383,24 @@ public:
         return neighbors.get(neighborId);
     }
 };
+class Vehicles {
+public:
+    string id;
+    string start;
+    string end;
+    Vehicles(string id = "", string start = "", string end = "") : id(id), start(start), end(end) {}
+    operator string() {
+        if (id.empty())
+            return "";
+        return string(1, id[id.size() - 1]);  // Return the last character of `id` as a string
+    }
+};
 
 class Graph {
 public:
     HashTable<GraphNode> vertices;
-
+    LinkedList<Vehicles> vehicles;
+    MinHeap<Vehicles> emergencyVehicles;
     // Find a node by id (
     GraphNode* findNode(string& id) {
         GraphNode *node = vertices.search(id);
@@ -427,7 +468,14 @@ public:
             }
         }
     }
-
+    // Show the new vehicles
+    void showVehicles() {
+        Node<Vehicles>* head = vehicles.head;
+        while (head) {
+            cout << head->data.id << " moving from " << head->data.start << " to " << head->data.end << endl;
+            head = head->next;
+        }
+    }
     // Show blocked roads
     void showBlocked() {
         cout << "------ Blocked Roads ------" << endl;
@@ -549,20 +597,51 @@ public:
         }
         file.close();
     }
-    struct PathNode {
-        string id;
-        int distance;
-        bool operator>(const PathNode& other) const {
-            return distance > other.distance;
+    void loadVehicles(string filename) {
+        ifstream file(filename);
+        if (!file.is_open()) {
+            cout << "File doesn't exist.\n";
+            return;
         }
-    };
+
+        string line;
+        getline(file, line);
+
+        while (getline(file, line)) {
+            stringstream ss(line);
+            string id, from, to;
+            if (getline(ss, id, ',') && getline(ss, from, ',') && getline(ss, to, ',')) {
+                vehicles.enqueue({id, from, to});
+            }
+        }
+        file.close();
+    }
+    void loadEmergencyVehicles(string filename) {
+        ifstream file(filename);
+        if (!file.is_open()) {
+            cout << "File doesn't exist.\n";
+            return;
+        }
+
+        string line;
+        getline(file, line);
+
+        while (getline(file, line)) {
+            stringstream ss(line);
+            string id, from, to, priority;
+            if (getline(ss, id, ',') && getline(ss, from, ',') && getline(ss, to, ',') && getline(ss,  priority, ',')) {
+                emergencyVehicles.insert({id, from, to}, stoi(priority));
+            }
+        }
+        file.close();
+    }
     void dijkstra(string startId, string targetId) {
         if (!findNode(startId) || !findNode(targetId)) {
             cout << "One or both nodes do not exist!" << endl;
             return;
         }
 
-        MinHeap pq;
+        MinHeap<string> pq;
         HashTable<int> distances;
         HashTable<string> predecessors;
 
@@ -576,7 +655,7 @@ public:
         pq.insert(startId, 0);
 
         while (!pq.isEmpty()) {
-            MinHeapNode current = pq.getMin();  // Get the MinHeapNode directly
+            MinHeapNode<string> current = pq.getMin();  // Get the MinHeapNode directly
 
             if (current.id == targetId) break;
 
@@ -601,19 +680,17 @@ public:
         if (distances[targetId] == INT_MAX) {
             cout << "No path to " << targetId << endl;
         } else {
-            vector<string> path;
+            LinkedList<string> path;
             string current = targetId;
             while (current != startId) {
-                path.push_back(current);
+                path.enqueue(current);
                 current = *predecessors.search(current);  // Use the updated search method
             }
-            path.push_back(startId);
-            reverse(path.begin(), path.end());
+            path.enqueue(startId);
+            path.reverse();
 
             cout << "Shortest path (Dijkstra): ";
-            for (string& node : path) {
-                cout << node << " ";
-            }
+            path.display();
             cout << "\nTotal weight: " << distances[targetId] << endl;
         }
     }
@@ -629,6 +706,7 @@ int main() {
 
     graph.loadNetwork("road_network.csv");
     graph.loadBlocked("road_closures.csv");
+    graph.loadVehicles("vehicles.csv");
 
     cout << "Graph Adjacency List:" << endl;
     graph.printGraph();
@@ -638,5 +716,9 @@ int main() {
     graph.bfs("A");
     graph.dfs("A");
     graph.dijkstra("A", "K");
+    graph.blockEdge("A","H");
+    graph.blockEdge("B","H");
+    graph.dijkstra("A", "K");
+    graph.showBlocked();
     return 0;
 }
