@@ -3,6 +3,7 @@
 #include <sstream>
 #include <string>
 using namespace std;
+#include <bits/stdc++.h>
 
 template <typename T>
 class Node {
@@ -10,7 +11,7 @@ public:
     T data;
     Node* next;
 
-    Node(T value) : data(value), next(nullptr) {}
+    Node(T value = T()) : data(value), next(nullptr) {}
 };
 
 template <typename T>
@@ -32,6 +33,17 @@ public:
             current = current->next;
         }
         cout << endl;
+    }
+    // Generic get function for heap operations
+    T* getGeneric(string key) {
+        Node<T>* current = head;
+        while (current) {
+            if (current->data.id == key) {
+                return &current->data;
+            }
+            current = current->next;
+        }
+        return nullptr;
     }
     // Push function for linked list to serve as a stack.
     void push(T value) {
@@ -132,7 +144,7 @@ public:
     string key;
     T data;
     bool occupied;
-    HashTableNode(string key = "") : key(key), data(T(key)), occupied(false) {}
+    HashTableNode(string key = "") : key(key), data(T()), occupied(false) {}
 };
 
 const int size = 26; // Size of the hash table.
@@ -149,6 +161,18 @@ public:
     int hash(string key) {
         return (key[0] - 'A') % size;
     }
+    T& operator[](const string& key) {
+        int h = hash(key);
+        for (int i = 0; i < size; ++i) {
+            if (arr[h].occupied && arr[h].key == key) {
+                return arr[h].data;  // Return a reference to the data
+            }
+            h = (h + 1) % size;
+        }
+        // If key is not found, insert it with a default value.
+        insert(key, T());
+        return arr[hash(key)].data;
+    }
     // Inserts a key-value pair to the hashtable.
     void insert(string key, T val) {
         int h = hash(key);
@@ -162,7 +186,7 @@ public:
             h = (h + 1) % size;
         }
     }
-    // Returns a pointer to the object.
+    // Returns a reference to the object.
     T* search(string key) {
         int h = hash(key);
         for (int i = 0; i < size; ++i) {
@@ -175,7 +199,7 @@ public:
     }
     // Checks if it contains a key.
     bool contains(string key) {
-        return search(key) != nullptr;
+        return search(key) != T();
     }
     // Prints the list.
     void printList() {
@@ -204,12 +228,122 @@ public:
     void unblock() { blocked = false; }
 };
 
+class MinHeapNode {
+public:
+    string id;
+    int priority;
+
+    MinHeapNode(string id = "", int priority = INT_MAX)
+        : id(id), priority(priority) {}
+
+    bool operator<(MinHeapNode a) {
+        return priority < a.priority;
+    }
+
+    bool operator>(MinHeapNode a) {
+        return priority > a.priority;
+    }
+};
+
+class MinHeap {
+public:
+    LinkedList<MinHeapNode> heap;  // Underlying structure for the heap
+    HashTable<Node<MinHeapNode>> hashMap;  // HashMap to store objects of MinHeapNode
+
+    // Inserts a new node into the heap
+    void insert(string id, int priority) {
+        Node<MinHeapNode> *existingNode = hashMap.search(id);
+        if (existingNode) {
+            if (existingNode->data.priority > priority) {
+                existingNode->data.priority = priority;  // Update priority if it's better
+            }
+            return;
+        }
+
+        MinHeapNode newNode(id, priority);
+        heap.enqueue(newNode);
+        hashMap.insert(id, *heap.tail);  // Store the object in the HashMap
+    }
+    // Helper function to swap data between two nodes
+    void swap(Node<MinHeapNode>* a, Node<MinHeapNode>* b) {
+        MinHeapNode temp = a->data;
+        a->data = b->data;
+        b->data = temp;
+
+        hashMap.insert(a->data.id, *a);
+        hashMap.insert(b->data.id, *b);
+    }
+
+    // Finds the node with the minimum priority
+    Node<MinHeapNode>* findMinNode() {
+        Node<MinHeapNode>* minNode = heap.head;
+        Node<MinHeapNode>* current = heap.head;
+
+        while (current) {
+            if (current->data.priority < minNode->data.priority) {
+                minNode = current;
+            }
+            current = current->next;
+        }
+        return minNode;
+    }
+    // Extracts the node with the minimum priority
+    MinHeapNode getMin() {
+        if (heap.isEmpty()) {
+            return MinHeapNode();
+        }
+
+        Node<MinHeapNode>* minNode = findMinNode();
+        MinHeapNode minValue = minNode->data;
+
+        // Remove from the hashMap
+        hashMap.insert(minNode->data.id, Node<MinHeapNode>());  // Replace with an empty node
+
+        // Remove from the list
+        if (minNode == heap.head) {
+            heap.dequeue();
+        } else {
+            Node<MinHeapNode>* current = heap.head;
+            while (current->next != minNode) {
+                current = current->next;
+            }
+            current->next = minNode->next;
+            if (minNode == heap.tail) {
+                heap.tail = current;
+            }
+            delete minNode;
+            heap.size--;
+        }
+
+        return minValue;
+    }
+
+
+    // Checks if the heap is empty
+    bool isEmpty() {
+        return heap.isEmpty();
+    }
+
+    // Prints the heap (for debugging)
+    void printHeap() {
+        Node<MinHeapNode>* current = heap.head;
+        while (current) {
+            cout << "(" << current->data.id << ", " << current->data.priority << ")";
+            if (current->next) {
+                cout << " -> ";
+            }
+            current = current->next;
+        }
+        cout << endl;
+    }
+};
+
 class GraphNode {
 public:
     string id;
     LinkedList<Edge> neighbors;
 
-    GraphNode(string id) : id(id) {}
+    GraphNode(string id = "") : id(id) {}
     // Appends a neighbor to the intersection.
     void addNeighbor(string& neighborId, int weight, int vehicles = 0) {
         if (!neighbors.contains(neighborId)) {
@@ -228,7 +362,7 @@ public:
 
     // Find a node by id (
     GraphNode* findNode(string& id) {
-        GraphNode* node = vertices.search(id);
+        GraphNode *node = vertices.search(id);
         return node;
     }
 
@@ -415,6 +549,78 @@ public:
         }
         file.close();
     }
+    struct PathNode {
+        string id;
+        int distance;
+        bool operator>(const PathNode& other) const {
+            return distance > other.distance;
+        }
+    };
+    void dijkstra(string startId, string targetId) {
+        if (!findNode(startId) || !findNode(targetId)) {
+            cout << "One or both nodes do not exist!" << endl;
+            return;
+        }
+
+        MinHeap pq;
+        HashTable<int> distances;
+        HashTable<string> predecessors;
+
+        for (int i = 0; i < size; ++i) {
+            if (vertices.arr[i].occupied) {
+                distances[vertices.arr[i].data.id] = INT_MAX;
+            }
+        }
+
+        distances[startId] = 0;
+        pq.insert(startId, 0);
+
+        while (!pq.isEmpty()) {
+            MinHeapNode current = pq.getMin();  // Get the MinHeapNode directly
+
+            if (current.id == targetId) break;
+
+            GraphNode* node = findNode(current.id);
+            if (!node) continue;
+
+            Node<Edge>* neighbor = node->neighbors.head;
+            while (neighbor) {
+                Edge& edge = neighbor->data;
+                if (!edge.blocked) {
+                    int newDist = distances[current.id] + edge.weight;
+                    if (newDist < distances[edge.destination]) {
+                        distances[edge.destination] = newDist;
+                        predecessors.insert(edge.destination, current.id);
+                        pq.insert(edge.destination, newDist);
+                    }
+                }
+                neighbor = neighbor->next;
+            }
+        }
+
+        if (distances[targetId] == INT_MAX) {
+            cout << "No path to " << targetId << endl;
+        } else {
+            vector<string> path;
+            string current = targetId;
+            while (current != startId) {
+                path.push_back(current);
+                current = *predecessors.search(current);  // Use the updated search method
+            }
+            path.push_back(startId);
+            reverse(path.begin(), path.end());
+
+            cout << "Shortest path (Dijkstra): ";
+            for (string& node : path) {
+                cout << node << " ";
+            }
+            cout << "\nTotal weight: " << distances[targetId] << endl;
+        }
+    }
+
+
+
+
 };
 
 
@@ -431,5 +637,6 @@ int main() {
     graph.showBlocked();
     graph.bfs("A");
     graph.dfs("A");
+    graph.dijkstra("A", "K");
     return 0;
 }
