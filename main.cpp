@@ -5,6 +5,8 @@
 #include <type_traits>
 using namespace std;
 
+const int size = 26; // Size of the hash table.
+
 template <typename T>
 class Node {
 public:
@@ -15,25 +17,91 @@ public:
 };
 
 template <typename T>
+class HashTableNode {
+public:
+    string key;
+    T data;
+    bool occupied;
+    HashTableNode(string key = "") : key(key), data(T()), occupied(false) {}
+};
+
+template <typename T>
+class MinHeapNode {
+public:
+    T id;
+    int priority;
+
+    MinHeapNode(T id = T(), int priority = INT_MAX)
+        : id(id), priority(priority) {}
+
+    bool operator<(MinHeapNode a) {
+        return priority < a.priority;
+    }
+
+    bool operator>(MinHeapNode a) {
+        return priority > a.priority;
+    }
+};
+
+class Edge {
+public:
+    string destination;
+    int weight;
+    int vehicles;
+    bool blocked;
+    Edge(const string& destination = "", int weight = 0, int vehicles = 0)
+        : destination(destination), weight(weight), vehicles(vehicles), blocked(false) {}
+
+    void block() { blocked = true; }
+    void unblock() { blocked = false; }
+};
+
+class Vehicles {
+public:
+    string id;
+    string start;
+    string end;
+    Vehicles(string id = "", string start = "", string end = "") : id(id), start(start), end(end) {}
+    operator string() {
+        if (id.empty())
+            return "";
+        return string(1, id[id.size() - 1]);  // Return the last character of `id` as a string
+    }
+};
+
+template <typename T>
 class LinkedList {
 
 public:
     Node<T>* head;
     Node<T>* tail;
     int size;
+
     LinkedList() : head(nullptr), tail(nullptr), size(0) {}
-    // Displays the road network.
+
+    // Returns a true copy of the linked list.
+    LinkedList<T> copyLinkedList(LinkedList<T>& original) {
+        LinkedList<T> copy;
+        Node<T>* current = original.head;
+        while (current) {
+            copy.enqueue(current->data);
+            current = current->next;
+        }
+        return copy;
+    }
+
+    // Displays all neighbors of the graph.
     void printList() {
         Node<T>* current = head;
         while (current) {
             cout << "(" << current->data.destination << ", "
-                 << current->data.weight << ", "
-                 << current->data.vehicles << ")";
+                 << current->data.weight  << ")";
             if (current->next) cout << " -> ";
             current = current->next;
         }
         cout << endl;
     }
+
     // Generic get function for heap operations
     T* getGeneric(string key) {
         Node<T>* current = head;
@@ -45,6 +113,7 @@ public:
         }
         return nullptr;
     }
+
     // Push function for linked list to serve as a stack.
     void push(T value) {
         Node<T>* NN = new Node<T>(value);
@@ -56,6 +125,7 @@ public:
         }
         size++;
     }
+
     // Meant for returning a pointer to an Edge object if the destination i.e 'from' is present.
     T* get(string& value) {
         Node<T>* current = head;
@@ -67,6 +137,7 @@ public:
         }
         return nullptr;
     }
+
     // Pop function for linked list to serve as a stack.
     T pop() {
         if (!head) {
@@ -85,6 +156,7 @@ public:
         size--;
         return value;
     }
+
     // Enqueue function for linked list to serve as a queue.
     void enqueue(T value) {
         Node<T>* NN = new Node<T>(value);
@@ -96,6 +168,7 @@ public:
         }
         size++;
     }
+
     // Dequeue function for linked list to serve as a queue.
     T dequeue() {
         if (!head) {
@@ -111,10 +184,13 @@ public:
         size--;
         return value;
     }
+
     // Checks if linked list is empty.
     bool isEmpty() {
         return head == nullptr;
     }
+
+    // Displays all elements of the linked list.
     void display() {
         Node<T>* current = head;
         while (current) {
@@ -125,6 +201,7 @@ public:
             current = current->next;
         }
     }
+
     // Reverses the linked list.
     void reverse() {
         Node<T>* prev = nullptr;
@@ -140,6 +217,7 @@ public:
 
         head = prev;
     }
+
     // Checks if an Edge's destination i.e 'from' is present.
     bool contains(string& value) {
         Node<T>* current = head;
@@ -151,6 +229,7 @@ public:
         }
         return false;
     }
+
     // Checks if linked list contains a string.
     bool containsString(string value) {
         Node<T>* current = head;
@@ -163,20 +242,12 @@ public:
         return false;
     }
 };
-template <typename T>
-class HashTableNode {
-public:
-    string key;
-    T data;
-    bool occupied;
-    HashTableNode(string key = "") : key(key), data(T()), occupied(false) {}
-};
 
-const int size = 26; // Size of the hash table.
 template <typename T>
 class HashTable {
 public:
     HashTableNode<T> arr[size];
+
     HashTable() {
         for (int i = 0; i < size; ++i) {
             arr[i] = HashTableNode<T>();
@@ -184,8 +255,9 @@ public:
     }
     // Hashes the string key into an integer index.
     int hash(string key) {
-        return (key[0] - 'A') % size;
+        return (key[0] - 'A' + size) % size;
     }
+    // Subscript operator overloading.
     T& operator[](const string& key) {
         int h = hash(key);
         for (int i = 0; i < size; ++i) {
@@ -198,10 +270,15 @@ public:
         insert(key, T());
         return arr[hash(key)].data;
     }
-    // Inserts a key-value pair to the hashtable.
+
+    // Insert a key-value pair into the hash table.
     void insert(string key, T val) {
         int h = hash(key);
         for (int i = 0; i < size; ++i) {
+            if (arr[h].occupied && arr[h].key == key) {
+                arr[h].data = val; // Update the value if key exists
+                return;
+            }
             if (!arr[h].occupied) {
                 arr[h].key = key;
                 arr[h].data = val;
@@ -211,6 +288,7 @@ public:
             h = (h + 1) % size;
         }
     }
+
     // Returns a reference to the object.
     T* search(string key) {
         int h = hash(key);
@@ -222,10 +300,12 @@ public:
         }
         return nullptr;
     }
+
     // Checks if it contains a key.
     bool contains(string key) {
-        return search(key) != T();
+        return search(key) != nullptr;
     }
+
     // Prints the list.
     void printList() {
         for (int i = 0; i < size; ++i) {
@@ -237,37 +317,6 @@ public:
                     cout << " -> ";
             }
         }
-    }
-};
-
-class Edge {
-public:
-    string destination;
-    int weight;
-    int vehicles;
-    bool blocked;
-    Edge(const string& destination = "", int weight = 0, int vehicles = 0)
-        : destination(destination), weight(weight), vehicles(vehicles), blocked(false) {}
-
-    void block() { blocked = true; }
-    void unblock() { blocked = false; }
-};
-
-template <typename T>
-class MinHeapNode {
-public:
-    T id;
-    int priority;
-
-    MinHeapNode(T id = T(), int priority = INT_MAX)
-        : id(id), priority(priority) {}
-
-    bool operator<(MinHeapNode a) {
-        return priority < a.priority;
-    }
-
-    bool operator>(MinHeapNode a) {
-        return priority > a.priority;
     }
 };
 
@@ -369,9 +418,10 @@ public:
 class GraphNode {
 public:
     string id;
+    int greenTime;
     LinkedList<Edge> neighbors;
 
-    GraphNode(string id = "") : id(id) {}
+    GraphNode(string id = "", int greenTime = 0) : id(id), greenTime(greenTime) {}
     // Appends a neighbor to the intersection.
     void addNeighbor(string& neighborId, int weight, int vehicles = 0) {
         if (!neighbors.contains(neighborId)) {
@@ -383,24 +433,13 @@ public:
         return neighbors.get(neighborId);
     }
 };
-class Vehicles {
-public:
-    string id;
-    string start;
-    string end;
-    Vehicles(string id = "", string start = "", string end = "") : id(id), start(start), end(end) {}
-    operator string() {
-        if (id.empty())
-            return "";
-        return string(1, id[id.size() - 1]);  // Return the last character of `id` as a string
-    }
-};
 
 class Graph {
 public:
     HashTable<GraphNode> vertices;
     LinkedList<Vehicles> vehicles;
     MinHeap<Vehicles> emergencyVehicles;
+
     // Find a node by id (
     GraphNode* findNode(string& id) {
         GraphNode *node = vertices.search(id);
@@ -442,7 +481,6 @@ public:
         }
     }
 
-
     // Add an edge between two nodes
     void addEdge(string& from, string& to, int weight, int vehicles = 0) {
         GraphNode* fromNode = findNode(from);
@@ -459,8 +497,46 @@ public:
         }
     }
 
+    // Function to find and print all possible routes from start node to end node
+    void findAllPaths(string from, string to) {
+        GraphNode* start = findNode(from);
+        GraphNode* end = findNode(to);
+        if (!start || !end) {
+            cout << "Start or end node not found!" << endl;
+            return;
+        }
+
+        HashTable<bool> visited;
+        findAllPathsHelper(from, to, "", 0, visited);
+    }
+
+    // Helper function for DFS to find and print all paths
+    void findAllPathsHelper(string from, string to, string path, int weight, HashTable<bool>& visited) {
+        visited.insert(from, true);
+        path += from + " ";
+
+        if (from == to) {
+            cout << "Path: " << path << " | Total Weight: " << weight << endl;
+        } else {
+            GraphNode* currentNode = findNode(from);
+            if (currentNode) {
+                Node<Edge>* neighbor = currentNode->neighbors.head;
+                while (neighbor) {
+                    if (!visited[neighbor->data.destination]) {
+                        int edgeWeight = neighbor->data.weight;
+                        findAllPathsHelper(neighbor->data.destination, to, path, weight + edgeWeight, visited);
+                    }
+                    neighbor = neighbor->next;
+                }
+            }
+        }
+
+        visited.insert(from, false);
+    }
+
     // Print the entire graph
     void printGraph() {
+        cout << "------ City Traffic Network ------" << endl;
         for (int i = 0; i < size; ++i) {
             if (vertices.arr[i].occupied) {
                 cout << vertices.arr[i].data.id << " -> ";
@@ -468,7 +544,8 @@ public:
             }
         }
     }
-    // Show the new vehicles
+
+    // Display all the vehicles and their destinations.
     void showVehicles() {
         Node<Vehicles>* head = vehicles.head;
         while (head) {
@@ -476,6 +553,16 @@ public:
             head = head->next;
         }
     }
+
+    // Display all the emergency vehicles and their destinations.
+    void showEmergencyVehicles() {
+        Node<MinHeapNode<Vehicles>> *head = emergencyVehicles.heap.head;
+        while (head) {
+            cout << head->data.id.id << " moving from " << head->data.id.start << " to " << head->data.id.end << " with priority " << head->data.priority << endl;
+            head = head->next;
+        }
+    }
+
     // Show blocked roads
     void showBlocked() {
         cout << "------ Blocked Roads ------" << endl;
@@ -492,6 +579,18 @@ public:
             }
         }
     }
+
+    // Show traffic signals.
+    void showTraffic() {
+        cout << "------ Traffic Signal Status ------" << endl;
+        for (int i = 0; i < size; ++i) {
+            if (vertices.arr[i].occupied) {
+                GraphNode& node = vertices.arr[i].data;
+                cout << "Intersection " << node.id << " Green Time: " << node.greenTime << "s" << endl;
+            }
+        }
+    }
+    // Breath first search
     void bfs(string startId) {
         GraphNode* start = findNode(startId);
         if (!start) {
@@ -505,13 +604,13 @@ public:
         queue.enqueue(startId);
 
         while (!queue.isEmpty()) {
-            string currentId = queue.dequeue();
+            string from = queue.dequeue();
 
-            if (!visited.containsString(currentId)) {
-                cout << currentId << " ";
-                visited.enqueue(currentId);
+            if (!visited.containsString(from)) {
+                cout << from << " ";
+                visited.enqueue(from);
 
-                GraphNode* currentNode = findNode(currentId);
+                GraphNode* currentNode = findNode(from);
                 if (currentNode) {
                     Node<Edge>* neighbor = currentNode->neighbors.head;
                     while (neighbor) {
@@ -526,6 +625,7 @@ public:
         cout << endl;
     }
 
+    // Helper function for depth first searches
     void dfsHelper(string nodeId, LinkedList<string>& visited) {
         if (visited.containsString(nodeId)) {
             return;
@@ -545,6 +645,7 @@ public:
             }
         }
     }
+
     // Depth first search function
     void dfs(string startId) {
         LinkedList<string> visited;
@@ -573,6 +674,7 @@ public:
         }
         file.close();
     }
+
     // Read road network inputs from csv
     void loadNetwork(string filename) {
         ifstream file(filename);
@@ -597,6 +699,8 @@ public:
         }
         file.close();
     }
+
+    // Read vehicles data from csv.
     void loadVehicles(string filename) {
         ifstream file(filename);
         if (!file.is_open()) {
@@ -611,11 +715,13 @@ public:
             stringstream ss(line);
             string id, from, to;
             if (getline(ss, id, ',') && getline(ss, from, ',') && getline(ss, to, ',')) {
-                vehicles.enqueue({id, from, to});
+                addVehicle(id, from, to);
             }
         }
         file.close();
     }
+
+    // Read emergency vehicles data from csv.
     void loadEmergencyVehicles(string filename) {
         ifstream file(filename);
         if (!file.is_open()) {
@@ -630,11 +736,47 @@ public:
             stringstream ss(line);
             string id, from, to, priority;
             if (getline(ss, id, ',') && getline(ss, from, ',') && getline(ss, to, ',') && getline(ss,  priority, ',')) {
-                emergencyVehicles.insert({id, from, to}, stoi(priority));
+                int priorityInt = (priority == "High")? 0 : (priority == "Medium")? 1 : (priority == "Low")? 2 : -1;
+                cout << "Inserting Emergency Vehicle: "
+     << id << " with priority " << priorityInt << endl;
+                emergencyVehicles.insert({id, from, to}, priorityInt);
             }
         }
         file.close();
     }
+
+    // Read signals data from csv.
+    void loadSignals(string filename) {
+        ifstream file(filename);
+        if (!file.is_open()) {
+            cout << "File doesn't exist.\n";
+            return;
+        }
+
+        string line;
+        getline(file, line);
+
+        while (getline(file, line)) {
+            stringstream ss(line);
+            string intersection, greenTime;
+            if (getline(ss, intersection, ',') && getline(ss, greenTime, ',')) {
+                GraphNode* node = findNode(intersection);
+                if (node) {
+                    node->greenTime = stoi(greenTime);
+                }
+            }
+        }
+        file.close();
+    }
+
+    void load() {
+        loadNetwork("road_network.csv");
+        loadBlocked("road_closures.csv");
+        loadVehicles("vehicles.csv");
+        loadEmergencyVehicles("emergency_vehicles.csv");
+        loadSignals("traffic_signals.csv");
+    }
+    // Dijkstras algorithm for finding the shortest path.
     void dijkstra(string startId, string targetId) {
         if (!findNode(startId) || !findNode(targetId)) {
             cout << "One or both nodes do not exist!" << endl;
@@ -695,30 +837,141 @@ public:
         }
     }
 
+    // Displays vehicle counts.
+    void showCongestion() {
+        cout << "------ Congestion Status ------" << endl;
 
+        for (int i = 0; i < size; ++i) {
+            if (vertices.arr[i].occupied) {
+                GraphNode& node = vertices.arr[i].data;
+                Node<Edge>* current = node.neighbors.head;
 
+                // Traverse all edges of the current vertex
+                while (current) {
+                    cout << node.id << " to " << current->data.destination << " -> Vehicles: " << current->data.vehicles << endl;
+                    current = current->next;
+                }
+            }
+        }
+    }
 
+    // Adds a new vehicle to the graph.
+    void addVehicle(string id, string from, string to) {
+        Edge* road = getEdge(from, to);
+        if (road) {
+            road->vehicles++;
+            vehicles.enqueue({id, from, to});
+            cout << "Added Vehicle: " << id << endl;
+        }
+    }
+    void displayMenu() {
+        bool quit = true;
+        while (quit) {
+            cout << "\n\n---- Simulation Dashboard -----\n";
+            cout << "1. Display City Traffic Network\n";
+            cout << "2. Display Traffic Signal Status\n";
+            cout << "3. Display Congestion Status\n";
+            cout << "4. Display Blocked Roads\n";
+            cout << "5. Handle Emergency Vehicle Routing\n";
+            cout << "6. Block Road due to Accident\n";
+            cout << "7. Simulate Vehicle Routing\n";
+            cout << "8. Add car to road.\n";
+            cout << "9. Show all vehicles.\n";
+            cout << "10. Show all emergency vehicles.\n";
+            cout << "11. Add road between intersections.\n";
+            cout << "80. Exit Simulation\n";
+            cout << "Enter your choice: \n";
+            int n;
+            cin >> n;
+            switch (n) {
+                case 1: {
+                    printGraph();
+                    break;
+                }
+                case 2: {
+                    showTraffic();
+                    break;
+                }
+                case 3: {
+                    showCongestion();
+                    break;
+                }
+                case 4: {
+                    showBlocked();
+                    break;
+                }
+                case 5: {
+                    cout << "Enter start and end intersections for emergency vehicle.\n";
+                    string start, end;
+                    cin >> start >> end;
+                    dijkstra(start, end);
+                    break;
+                }
+                case 6: {
+                    cout << "Enter road to block (start, end): ";
+                    string start, end;
+                    cin >> start >> end;
+                    blockEdge(start, end);
+                    break;
+                }
+                case 7: {
+                    cout << "Simulating vehicle routing...\n";
+                    string start, end;
+                    cout << "Enter starting intersection: ";
+                    cin >> start;
+                    cout << "Enter ending intersection: ";
+                    cin >> end;
+                    cout << "All possible paths from A to F are:\n";
+                    findAllPaths(start, end);
+                    break;
+                }
+                case 8: {
+                    string start, end, name;
+                    cout << "Enter car name:\n";
+                    cin >> name;
+                    cout << "Enter starting intersection: ";
+                    cin >> start;
+                    cout << "Enter ending intersection: ";
+                    cin >> end;
+                    Edge* road = getEdge(start, end);
+                    if (road) {
+                        addVehicle(name, start, end);
+                    }
+                    break;
+                }
+                case 9: {
+                    showVehicles();
+                    break;
+                }
+                case 10: {
+                    showEmergencyVehicles();
+                    break;
+                }
+                case 11: {
+                    string start, end, weight;
+                    cout << "Enter starting intersection: ";
+                    cin >> start;
+                    cout << "Enter ending intersection: ";
+                    cin >> end;
+                    cout << "Enter weight: ";
+                    cin >> weight;
+                    addEdge(start, end, stoi(weight));
+                    break;
+                }
+
+                case 80: {
+                    quit = false;
+                    break;
+                }
+            }
+        }
+    }
 };
 
 
 int main() {
     Graph graph;
-
-    graph.loadNetwork("road_network.csv");
-    graph.loadBlocked("road_closures.csv");
-    graph.loadVehicles("vehicles.csv");
-
-    cout << "Graph Adjacency List:" << endl;
-    graph.printGraph();
-    graph.showBlocked();
-    graph.blockEdge("Y", "Z");
-    graph.showBlocked();
-    graph.bfs("A");
-    graph.dfs("A");
-    graph.dijkstra("A", "K");
-    graph.blockEdge("A","H");
-    graph.blockEdge("B","H");
-    graph.dijkstra("A", "K");
-    graph.showBlocked();
+    graph.load();
+    graph.displayMenu();
     return 0;
 }
