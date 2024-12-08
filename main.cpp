@@ -777,7 +777,7 @@ public:
         loadSignals("traffic_signals.csv");
     }
     // Dijkstras algorithm for finding the shortest path.
-    void dijkstra(string startId, string targetId) {
+    void dijkstra(string startId, string targetId, bool ignoreBlocked = 0) {
         if (!findNode(startId) || !findNode(targetId)) {
             cout << "One or both nodes do not exist!" << endl;
             return;
@@ -790,6 +790,7 @@ public:
         for (int i = 0; i < size; ++i) {
             if (vertices.arr[i].occupied) {
                 distances[vertices.arr[i].data.id] = INT_MAX;
+                predecessors[vertices.arr[i].data.id] = "";
             }
         }
 
@@ -797,8 +798,7 @@ public:
         pq.insert(startId, 0);
 
         while (!pq.isEmpty()) {
-            MinHeapNode<string> current = pq.getMin();  // Get the MinHeapNode directly
-
+            MinHeapNode<string> current = pq.getMin();
             if (current.id == targetId) break;
 
             GraphNode* node = findNode(current.id);
@@ -807,11 +807,11 @@ public:
             Node<Edge>* neighbor = node->neighbors.head;
             while (neighbor) {
                 Edge& edge = neighbor->data;
-                if (!edge.blocked) {
+                if (ignoreBlocked || !edge.blocked) { // Updated condition
                     int newDist = distances[current.id] + edge.weight;
                     if (newDist < distances[edge.destination]) {
                         distances[edge.destination] = newDist;
-                        predecessors.insert(edge.destination, current.id);
+                        predecessors[edge.destination] = current.id;
                         pq.insert(edge.destination, newDist);
                     }
                 }
@@ -826,7 +826,7 @@ public:
             string current = targetId;
             while (current != startId) {
                 path.enqueue(current);
-                current = *predecessors.search(current);  // Use the updated search method
+                current = predecessors[current];
             }
             path.enqueue(startId);
             path.reverse();
@@ -836,7 +836,47 @@ public:
             cout << "\nTotal weight: " << distances[targetId] << endl;
         }
     }
+    // Show shortest path for all emergency vehicles, ignoring all traffick lights.
+    void showEmergencyVehiclePaths() {
+        cout << "------ All Emergency Vehicle Shortest Paths ------" << endl;
 
+        Node<MinHeapNode<Vehicles>> *current = emergencyVehicles.heap.head;
+        while (current) {
+            MinHeapNode<Vehicles>& vehicleNode = current->data;
+            Vehicles& vehicle = vehicleNode.id;
+            cout << "Emergency Vehicle " << vehicle.id << " from " << vehicle.start << " to " << vehicle.end << ":" << endl;
+
+            // Call Dijkstra's algorithm with ignoreBlocked = true
+            dijkstra(vehicle.start, vehicle.end, true);
+
+            cout << endl;
+            current = current->next;
+        }
+    }
+
+    // Show all shortest paths for all vehicles.
+    void showVehiclePaths() {
+        Node<Vehicles>* current = vehicles.head;
+        while (current) {
+            Vehicles vehicle = current->data;
+            if (vehicle.start.empty() || vehicle.end.empty()) {
+                cout << "Invalid vehicle data: " << vehicle.id << endl;
+                current = current->next;
+                continue;
+            }
+
+            GraphNode* start = findNode(vehicle.start);
+            GraphNode* end = findNode(vehicle.end);
+
+            if (start && end) {
+                cout << "Shortest path for vehicle " << vehicle.id << " from " << vehicle.start << " to " << vehicle.end << ":" << endl;
+                dijkstra(vehicle.start, vehicle.end);
+                cout << endl;
+            }
+
+            current = current->next;
+        }
+    }
     // Displays vehicle counts.
     void showCongestion() {
         cout << "------ Congestion Status ------" << endl;
@@ -855,13 +895,86 @@ public:
         }
     }
 
-    // Adds a new vehicle to the graph.
+
+    // Function to return a list of the shortest path using Dijkstra's algorithm
+    LinkedList<string> findShortestPath(string startId, string targetId) {
+        MinHeap<string> pq;
+        HashTable<int> distances;
+        HashTable<string> predecessors;
+
+        // Initialize distances and predecessors
+        for (int i = 0; i < size; ++i) {
+            if (vertices.arr[i].occupied) {
+                distances[vertices.arr[i].data.id] = INT_MAX;
+                predecessors[vertices.arr[i].data.id] = "";
+            }
+        }
+
+        distances[startId] = 0;
+        pq.insert(startId, 0);
+
+        while (!pq.isEmpty()) {
+            MinHeapNode<string> current = pq.getMin();
+            if (current.id == targetId) break;
+
+            GraphNode* node = findNode(current.id);
+            if (!node) continue;
+
+            Node<Edge>* neighbor = node->neighbors.head;
+            while (neighbor) {
+                Edge& edge = neighbor->data;
+                if (!edge.blocked) {
+                    int newDist = distances[current.id] + edge.weight;
+                    if (newDist < distances[edge.destination]) {
+                        distances[edge.destination] = newDist;
+                        predecessors[edge.destination] = current.id;
+                        pq.insert(edge.destination, newDist);
+                    }
+                }
+                neighbor = neighbor->next;
+            }
+        }
+
+        // Reconstruct the path
+        LinkedList<string> path;
+        string current = targetId;
+        while (!current.empty() && current != startId) {
+            path.push(current);
+            current = predecessors[current];
+        }
+        if (!current.empty()) {
+            path.push(startId);
+        } else {
+            // No path found
+            return LinkedList<string>();
+        }
+        return path;
+    }
+
+    // Add a vehicle and increase the count of each edge on the shortest path from that edge.
     void addVehicle(string id, string from, string to) {
-        Edge* road = getEdge(from, to);
-        if (road) {
-            road->vehicles++;
-            vehicles.enqueue({id, from, to});
-            cout << "Added Vehicle: " << id << endl;
+        LinkedList<string> path = findShortestPath(from, to);
+        if (!path.isEmpty()) {
+            Node<string>* current = path.head;
+            Node<string>* next = current->next;
+            while (next) {
+                string start = current->data;
+                string end = next->data;
+                Edge* road = getEdge(start, end);
+                if (road) {
+                    road->vehicles++;
+                } else {
+                    cout << "No direct road from " << start << " to " << end << endl;
+                }
+                current = next;
+                next = next->next;
+            }
+            vehicles.enqueue(Vehicles(id, from, to));
+            cout << "Added Vehicle: " << id << " along path: ";
+            path.display();
+            cout << endl;
+        } else {
+            cout << "No path found for vehicle " << id << " from " << from << " to " << to << endl;
         }
     }
     void displayMenu() {
@@ -879,6 +992,8 @@ public:
             cout << "9. Show all vehicles.\n";
             cout << "10. Show all emergency vehicles.\n";
             cout << "11. Add road between intersections.\n";
+            cout << "12. Show all shortest paths for all vehicles.\n";
+            cout << "13. Show all shortest paths for all emergency vehicles.\n";
             cout << "80. Exit Simulation\n";
             cout << "Enter your choice: \n";
             int n;
@@ -904,7 +1019,7 @@ public:
                     cout << "Enter start and end intersections for emergency vehicle.\n";
                     string start, end;
                     cin >> start >> end;
-                    dijkstra(start, end);
+                    dijkstra(start, end, 1);
                     break;
                 }
                 case 6: {
@@ -958,7 +1073,14 @@ public:
                     addEdge(start, end, stoi(weight));
                     break;
                 }
-
+                case 12: {
+                    showVehiclePaths();
+                    break;
+                }
+                case 13: {
+                    showEmergencyVehiclePaths();
+                    break;
+                }
                 case 80: {
                     quit = false;
                     break;
