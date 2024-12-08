@@ -2,7 +2,6 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-#include <type_traits>
 using namespace std;
 
 const int size = 26; // Size of the hash table.
@@ -75,9 +74,8 @@ class LinkedList {
 public:
     Node<T>* head;
     Node<T>* tail;
-    int size;
 
-    LinkedList() : head(nullptr), tail(nullptr), size(0) {}
+    LinkedList() : head(nullptr), tail(nullptr) {}
 
     // Returns a true copy of the linked list.
     LinkedList<T> copyLinkedList(LinkedList<T>& original) {
@@ -123,7 +121,6 @@ public:
             NN->next = head;
             head = NN;
         }
-        size++;
     }
 
     // Meant for returning a pointer to an Edge object if the destination i.e 'from' is present.
@@ -153,7 +150,6 @@ public:
         }
 
         delete temp;
-        size--;
         return value;
     }
 
@@ -166,7 +162,6 @@ public:
             tail->next = NN;
             tail = NN;
         }
-        size++;
     }
 
     // Dequeue function for linked list to serve as a queue.
@@ -181,7 +176,6 @@ public:
             tail = nullptr;
         }
         delete temp;
-        size--;
         return value;
     }
 
@@ -390,7 +384,6 @@ public:
                 heap.tail = current;
             }
             delete minNode;
-            heap.size--;
         }
 
         return minValue;
